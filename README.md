@@ -79,7 +79,7 @@ quit
 
 ---
 
-## 📁 Project Files
+## Project Files
 
 - `bankapp.py` — main application file  
 - `accounts.json` — stores usernames and passwords  
