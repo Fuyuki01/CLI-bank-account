@@ -14,10 +14,12 @@ A simple command-line banking system written in Python, built as a project to pr
 - Command-line interface using `argparse`
 
 ---
-
-## Clone The Repository 
+### Clone the repository
+```bash
 git clone https://github.com/Fuyuki01/CLI-bank-account.git
 cd Cli-bank-account
+```
+---
 
 ## Running The Program
 ```bash
