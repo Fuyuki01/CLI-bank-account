@@ -1,18 +1,7 @@
 [
     {
-        "name": "mehmet",
-        "password": "kilic"
-    },
-    {
-        "name": "onur",
-        "password": "nee"
-    },
-    {
-        "name": "deniz",
-        "password": "ere"
-    },
-    {
-        "name": "umut",
-        "password": "umut123"
+        "name": "nee",
+        "password": "ere",
+        "id": 1
     }
 ]

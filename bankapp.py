@@ -86,21 +86,18 @@ def loading_balance():
         return []
 
 
-def checking_user(name):
-    accounts = loading_accounts()
-
-    for account in accounts:
-        if account["name"] == name:
-            return False
-    return True
-
+def get_next_account_id(accounts):
+    if not accounts:
+        return 1
+    return max(account["id"] for account in accounts) + 1
 
 def opening_account(name, password):
     accounts = loading_accounts()
     balances = loading_balance()
-    new_account =    {
+    new_account =   {
         "name": name,
-        "password": password
+        "password": password,
+        "id": get_next_account_id(accounts)
     }
     new_balance = {
         "name": name,
@@ -141,11 +138,12 @@ def main():
 
             action = command[0]
 
-            if action == ["clear", "exit", "quit"]:
+            if action in ["clear", "exit", "quit"]:
                 print("you're loging out")
                 break
             elif action == "balance":
                 balance = user.balance()
+                print("-" * 40)
                 print(f"the current balance is ${balance}")
             elif action == "deposit":
                 parse = argparse.ArgumentParser(prog="deposit", add_help=False)
