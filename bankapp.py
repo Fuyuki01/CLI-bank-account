@@ -1,34 +1,45 @@
 import json
 import argparse
 import hashlib
+from datetime import datetime
 
 user_accounts = "acounts.json"
 balance_json = "balance.json"
+user_transactions = "transactions.json"
 
 class Account:
     def __init__(self, name, password):
         self.name = name
         self.password = password
-        self.userbalance = self._load_balance_from_file()
-        self.useraccount = self._load_accounts_from_file()
+        self.user_balance = self._load_balance_from_file()
+        self.user_account = self._load_accounts_from_file()
+        self.user_transactions = self._load_transactions_from_file()
     
     def balance(self):
-        return self.userbalance["balance"]
+        return self.user_balance["balance"]
+
+    def transactions(self):
+        logs = []
+        for transaction in self.user_transactions:
+            logs.append(f"type: {transaction['type']}, amount: {transaction['amount']}, time: {transaction['timestamp']}")
+        return logs
     
     def deposit(self, amount):
         try:
-            self.userbalance["balance"] += int(amount)
+            self.user_balance["balance"] += int(amount)
+            self.save_transaction("deposit", amount)
             print(f"${amount} added succesfully")
-            print(f"current balance is ${self.userbalance['balance']}")
+            print(f"current balance is ${self.user_balance['balance']}")
             self.save_balance()
         except ValueError:
             print("Invalid amount. please enter a number")
     
     def withdraw(self, amount):
         try:
-            self.userbalance["balance"] -= int(amount)
+            self.user_balance["balance"] -= int(amount)
+            self.save_transaction("withdraw", amount)
             print(f"${amount} withdrawn succesfully")
-            print(f"current balance is ${self.userbalance['balance']}")
+            print(f"current balance is ${self.user_balance['balance']}")
             self.save_balance()
         except ValueError:
             print("Invalid amount. please enter a number")
@@ -46,32 +57,48 @@ class Account:
             if account["name"] == self.name:
                 return account
         return None
+    
+    def _load_transactions_from_file(self):
+        transactions = loading_transactions()
+        return transactions.get(self.name, [])
 
     def save_balance(self):
         balances = loading_balance()
         for balance in balances:
             if balance["name"] == self.name:
-                balance["balance"] = self.userbalance["balance"]
+                balance["balance"] = self.user_balance["balance"]
                 break
         
         with open(balance_json, "w") as file:
-            json.dump(balances, file, indent=4)
-    
+            json.dump(balances, file, indent=None, separators=(",", ":"))
+        
+    def save_transaction(self, type, amount):
+        transactions = loading_transactions()
+        new_transaction = {
+            "type": type,
+            "amount": amount, 
+            "timestamp": datetime.now().isoformat()
+        }
 
+        transactions.setdefault(self.name, []).append(new_transaction)
+
+        with open(user_transactions, "w") as file:
+            json.dump(transactions, file, indent=4)
+    
     def password_check(self, input_password):
-        if self.useraccount == None:
+        if self.user_account == None:
             return False
-        return self.useraccount["password"] == hash_pasword(input_password)
+        return self.user_account["password"] == hash_password(input_password)
     
     def name_check(self, input_name):
-        if self.useraccount == None:
+        if self.user_account == None:
             return False
-        return self.useraccount["name"] == input_name
+        return self.user_account["name"] == input_name
 
 
 def loading_accounts():
     try:
-        with open(user_accounts, "r") as file:
+        with open(user_accounts) as file:
             accounts = json.load(file)
         return accounts
     except FileNotFoundError:
@@ -87,24 +114,34 @@ def loading_balance():
         return []
 
 
+def loading_transactions():
+    try:
+        with open(user_transactions) as file:
+            accounts = json.load(file)
+        return accounts
+    except FileNotFoundError:
+        return []
+
+
 def get_next_account_id(accounts):
     if not accounts:
         return 1
     return max(account["id"] for account in accounts) + 1
 
 
-def hash_pasword(password):
+def hash_password(password):
     h = hashlib.sha256()
     h.update(password.encode())
     password_hash = h.hexdigest()
     return password_hash
+
 
 def opening_account(name, password):
     accounts = loading_accounts()
     balances = loading_balance()
     new_account =   {
         "name": name,
-        "password": hash_pasword(password),
+        "password": hash_password(password),
         "id": get_next_account_id(accounts)
     }
     new_balance = {
@@ -153,6 +190,10 @@ def main():
                 balance = user.balance()
                 print("-" * 40)
                 print(f"the current balance is ${balance}")
+            elif action == "transactions":
+                logs = user.transactions()
+                for log in logs:
+                    print(log)
             elif action == "deposit":
                 parse = argparse.ArgumentParser(prog="deposit", add_help=False)
                 parse.add_argument("--amount", type=int, required=True, help="Amount of the depoist")
@@ -163,7 +204,7 @@ def main():
                     print("Ussage deposit --amount 50")
             elif action == "withdraw":
                 parse = argparse.ArgumentParser(prog="withdraw", add_help=False)
-                parse.add_argument("--amount", type=int, required=True, help="Amount of the depoist")
+                parse.add_argument("--amount", type=int, required=True, help="Amount of the withdraw")
                 try:
                     args = parse.parse_args(command[1].split())
                     user.withdraw(args.amount)
