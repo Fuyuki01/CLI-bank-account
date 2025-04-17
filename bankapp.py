@@ -1,5 +1,6 @@
 import json
 import argparse
+import hashlib
 
 user_accounts = "acounts.json"
 balance_json = "balance.json"
@@ -60,7 +61,7 @@ class Account:
     def password_check(self, input_password):
         if self.useraccount == None:
             return False
-        return self.useraccount["password"] == input_password
+        return self.useraccount["password"] == hash_pasword(input_password)
     
     def name_check(self, input_name):
         if self.useraccount == None:
@@ -91,12 +92,19 @@ def get_next_account_id(accounts):
         return 1
     return max(account["id"] for account in accounts) + 1
 
+
+def hash_pasword(password):
+    h = hashlib.sha256()
+    h.update(password.encode())
+    password_hash = h.hexdigest()
+    return password_hash
+
 def opening_account(name, password):
     accounts = loading_accounts()
     balances = loading_balance()
     new_account =   {
         "name": name,
-        "password": password,
+        "password": hash_pasword(password),
         "id": get_next_account_id(accounts)
     }
     new_balance = {
