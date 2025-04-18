@@ -2,6 +2,7 @@ import json
 import argparse
 import hashlib
 from datetime import datetime
+import getpass
 
 user_accounts = "acounts.json"
 balance_json = "balance.json"
@@ -95,6 +96,17 @@ class Account:
             return False
         return self.user_account["name"] == input_name
 
+    def change_password(self, newpassword):
+        self.user_account["password"] = hash_password(newpassword)
+        accounts = loading_accounts()
+        for account in accounts:
+            if account["name"] == self.name:
+                account["password"] = hash_password(newpassword)
+                print("your password has been changed successfully")
+                break
+        with open(user_accounts, "w") as file:
+            json.dump(accounts, file, indent=4)
+
 
 def loading_accounts():
     try:
@@ -160,7 +172,7 @@ def opening_account(name, password):
 def main():
     question = input("do you have a account if you have type 1 for oppening acount 2 ")
     name = input("name: ")
-    password = input("password: ")
+    password = getpass.getpass("password: ")
     
     if question == "1":
         user = Account(name, password)
@@ -170,7 +182,7 @@ def main():
         user = Account(name, password)
         print(f"Welcome to the **** bank {name}")
         print("Please login to your account with the password you have created") 
-        password = input("password: ")
+        password = getpass.getpass("password: ")
         checked = user.password_check(password)
     
     if checked:
@@ -210,6 +222,18 @@ def main():
                     user.withdraw(args.amount)
                 except:
                     print("Ussage withdraw --amount 50")
+            elif action == "change-password":
+                parse = argparse.ArgumentParser(prog="new", add_help=False)
+                parse.add_argument("--new", type=str, required=True, help="New password")
+                try:
+                    args = parse.parse_args(command[1].split())
+                    password_again = getpass.getpass("please enter your old password ")
+                    if hash_password(password_again) == user.user_account["password"]:
+                        user.change_password(args.new)
+                    else:
+                        print("password is wrong")
+                except:
+                    print("Usage: change-password --new newpassword")
 
     elif not checked:
         print("name or password wrong")
