@@ -8,17 +8,24 @@ class Account:
     def __init__(self, user_id):
         self.user_id = user_id
         self.user_account = db.get_acount_by_id(user_id)
+        if self.user_account is None:
+            raise ValueError(f"User has not been found")
+        
         self.name = self.user_account[1]
         self.user_balance = self.user_account[3]
         self.user_transactions = db.fetch_user_transactions(self.user_id)
     
     def balance(self):
-        return self.user_balance["balance"]
+        return self.user_balance
 
     def transactions(self):
         logs = []
+        self.user_transactions = db.fetch_user_transactions(self.user_id)
         for transaction in self.user_transactions:
-            logs.append(f"type: {transaction[2]}, amount: {transaction[3]}, time: {transaction[4]}")
+            type = transaction[2]
+            amount = f"${transaction[3]:,.2f}"
+            time = datetime.fromisoformat(transaction[4]).strftime("%Y-%m-%d %H:%M")
+            logs.append(f"{type:<8} | {amount:>10} | {time:}")
         return logs
     
     def deposit(self, amount):
@@ -32,7 +39,7 @@ class Account:
             db.update_balance(self.user_id, self.user_balance)
             
             # Update the transactions on the data base
-            db.save_transaction(self.user_id, "deposit", amount)
+            db.save_transaction(self.user_id, "Deposit", amount)
         except ValueError:
             print("Invalid amount. please enter a number")
     
@@ -41,7 +48,7 @@ class Account:
             print("Withdraw has not been made insufficient funds")
             return
         try:
-            self.user_balance["balance"] -= int(amount)
+            self.user_balance -= int(amount)
 
             print(f"${amount} withdrawn succesfully")
             print(f"current balance is ${self.user_balance}")
@@ -50,7 +57,7 @@ class Account:
             db.update_balance(self.user_id, self.user_balance)
             
             # Update the transactions on the data base
-            db.save_transaction(self.user_id, "deposit", amount)
+            db.save_transaction(self.user_id, "Withdraw", amount)
 
         except ValueError:
             print("Invalid amount. please enter a number")
@@ -64,66 +71,11 @@ class Account:
             print("you cannot transfer money to yourself")
             return 
         
-        balances = loading_balance()
-        recipient_found = False
-        for balance in balances:
-            if balance["name"] == to:
-                recipient_found = True
-                balance["balance"] += int(amount)
-                print(f"${amount} has been transfered succesfully to {to}")
-                self.recipient_transaction(to, amount)
-                break
-        if not recipient_found:
-            print("recipient has not been found")
-            return
-        
-        self.user_balance["balance"] -= int(amount)
-        self.save_balance()
-        self.save_transaction("transfer-sent", amount)
-        
-        with open(balance_json, "w") as file:
-            json.dump(balances, file, indent=4)
-
-    def change_password(self, newpassword):
-        self.user_account["password"] = hash_password(newpassword)
-        accounts = loading_accounts()
-        for account in accounts:
-            if account["name"] == self.name:
-                account["password"] = hash_password(newpassword)
-                print("your password has been changed successfully")
-                break
-        with open(user_accounts, "w") as file:
-            json.dump(accounts, file, indent=4)
     
-    def recipient_transaction(self, to, amount):
-        recipient_transactions = loading_transactions()
-        recipient_transactions.setdefault(to, []).append({
-            "type": "received",
-            "amount": amount,
-            "from": self.name,
-            "timestamp": datetime.now().isoformat()
-        })
-
-        with open(user_transactions, "w") as file:
-            json.dump(recipient_transactions, file, indent=4)
-
-    def _load_balance_from_file(self):
-        balances = loading_balance()
-        for balance in balances:
-            if balance["name"] == self.name:
-                return balance 
-        return {"name": self.name, "balance": 0}
-
-    def _load_accounts_from_file(self):
-        accounts = loading_accounts()
-        for account in accounts:
-            if account["name"] == self.name:
-                return account
-        return None
-    
-    def _load_transactions_from_file(self):
-        transactions = loading_transactions()
-        return transactions.get(self.name, [])
+    def change_password(self, new_password):
+        hashed_password = hash_password(new_password)
+        db.update_password(self.user_id, hashed_password)
+        print("your password has been changes successfully")
 
 
 def hash_password(password):
@@ -152,9 +104,11 @@ def main():
             checked = False
     elif question == "2":
         opening_account(name, password)
-        user = Account(name, password)
-        print(f"Welcome to the **** bank {name}")
-        checked = True
+        user_data = db.check_user(name, hash_password(password))
+        if user_data:
+            user = Account(user_data[0])    
+            print(f"Welcome to the **** bank {name}")
+            checked = True
     
     if checked:
         print(f"you have succesfully loged in {name}")
