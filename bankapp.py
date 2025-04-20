@@ -36,6 +36,9 @@ class Account:
             print("Invalid amount. please enter a number")
     
     def withdraw(self, amount):
+        if self.user_balance["balance"] < amount:
+            print("Withdraw has not been made insufficient funds")
+            return
         try:
             self.user_balance["balance"] -= int(amount)
             self.save_transaction("withdraw", amount)
@@ -47,7 +50,7 @@ class Account:
 
     def money_transfer(self, to, amount):
         if self.user_balance["balance"] < amount:
-            print("transfer has not been made insufficient funds")
+            print("Transfer has not been made insufficient funds")
             return
 
         if self.name == to:
@@ -212,12 +215,12 @@ def opening_account(name, password):
 
 def main():
     question = input("do you have a account if you have type 1 for oppening acount 2 ")
-    name = input("name: ")
+    name = input("name: ").strip().lower()
     password = getpass.getpass("password: ")
     
     if question == "1":
         user = Account(name, password)
-        checked = user.name_check(name) and user.password_check(password)
+        checked =  user.password_check(password)
     elif question == "2":
         opening_account(name, password)
         user = Account(name, password)
@@ -234,7 +237,7 @@ def main():
             if not command:
                 continue
 
-            action = command[0]
+            action = command[0].strip().lower()
 
             if action in ["clear", "exit", "quit"]:
                 print("you're loging out")
@@ -254,7 +257,7 @@ def main():
                     args = parse.parse_args(command[1].split())
                     user.deposit(args.amount)
                 except:
-                    print("Ussage deposit --amount 50")
+                    print("Usage: deposit --amount 50")
             elif action == "withdraw":
                 parse = argparse.ArgumentParser(prog="withdraw", add_help=False)
                 parse.add_argument("--amount", type=int, required=True, help="Amount of the withdraw")

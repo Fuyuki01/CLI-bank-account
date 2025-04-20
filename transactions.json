@@ -1,4 +1,22 @@
 {
-    "ere": [],
-    "ert": []
+    "ere": [
+        {
+            "type": "deposit",
+            "amount": 150,
+            "timestamp": "2025-04-19T11:31:10.644234"
+        },
+        {
+            "type": "transfer-sent",
+            "amount": 150,
+            "timestamp": "2025-04-19T11:31:30.722591"
+        }
+    ],
+    "ert": [
+        {
+            "type": "received",
+            "amount": 150,
+            "from": "ere",
+            "timestamp": "2025-04-19T11:31:30.720802"
+        }
+    ]
 }
