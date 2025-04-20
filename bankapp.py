@@ -71,6 +71,31 @@ class Account:
             print("you cannot transfer money to yourself")
             return 
         
+        recipient = db.get_user_id_by_name(to)
+        if not recipient:
+            print("User not Found")
+            return
+        
+        self.user_balance -= int(amount)
+
+        recipient_id = recipient["id"]
+
+        # Adding the money to the recipient
+        recipient_balance = recipient["balance"] + int(amount)
+
+        # Updating the user balance
+        db.update_balance(self.user_id, self.user_balance)
+
+        # Updating the recipient balance
+        db.update_balance(recipient_id, recipient_balance)
+
+        # Updating the transaction to the user
+        db.save_transaction(self.user_id, "transfer", amount)
+
+        # Updating the transaction to the recipient
+        db.save_transaction(recipient_id, "recieved", amount)
+
+        print(f"succesfully sent ${amount} to {to}")
     
     def change_password(self, new_password):
         hashed_password = hash_password(new_password)
@@ -153,7 +178,7 @@ def main():
                 try:
                     args = parse.parse_args(command[1].split())
                     password_again = getpass.getpass("please enter your old password ")
-                    if hash_password(password_again) == user.user_account["password"]:
+                    if hash_password(password_again) == user.user_account[2]:
                         user.change_password(args.new)
                     else:
                         print("password is wrong")
@@ -166,9 +191,9 @@ def main():
                 try:
                     args = parse.parse_args(command[1].split())
                     user.money_transfer(args.to, args.amount)
-                except:
+                except Exception as e:
                     print("Usage: transfer --to jack --amount $150")
-
+                    print("error", e)
     elif not checked:
         print("name or password wrong")
 

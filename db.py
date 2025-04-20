@@ -139,7 +139,7 @@ def fetch_user_transactions(user_id):
 
 def update_password(user_id, new_password):
     # Connect to data base
-    conn =sqlite3.connect("bank.db")
+    conn = sqlite3.connect("bank.db")
 
     # Create a cursor
     cur = conn.cursor()
@@ -149,6 +149,27 @@ def update_password(user_id, new_password):
     UPDATE accounts SET password=? WHERE id=?
     """, (new_password, user_id))
 
-    # Commit the changes and close the connections
+    # Commit the changes and close the connection
     conn.commit()
     conn.close()
+
+
+def get_user_id_by_name(name):
+    # Connect to data base
+    conn = sqlite3.connect("bank.db")
+
+    conn.row_factory = sqlite3.Row
+    
+
+    # Create a cursor 
+    cur = conn.cursor()
+
+    cur.execute(""" 
+    SELECT id, balance FROM accounts WHERE name=?
+    """, (name,))
+    
+    user = cur.fetchone()
+
+    # Close the connection
+    conn.close()
+    return user if user else None
