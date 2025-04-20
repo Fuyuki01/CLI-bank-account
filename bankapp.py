@@ -1,20 +1,16 @@
-import json
 import argparse
 import hashlib
 from datetime import datetime
 import getpass
-
-user_accounts = "acounts.json"
-balance_json = "balance.json"
-user_transactions = "transactions.json"
+import db
 
 class Account:
-    def __init__(self, name, password):
-        self.name = name
-        self.password = password
-        self.user_balance = self._load_balance_from_file()
-        self.user_account = self._load_accounts_from_file()
-        self.user_transactions = self._load_transactions_from_file()
+    def __init__(self, user_id):
+        self.user_id = user_id
+        self.user_account = db.get_acount_by_id(user_id)
+        self.name = self.user_account[1]
+        self.user_balance = self.user_account[3]
+        self.user_transactions = db.fetch_user_transactions(self.user_id)
     
     def balance(self):
         return self.user_balance["balance"]
@@ -22,34 +18,45 @@ class Account:
     def transactions(self):
         logs = []
         for transaction in self.user_transactions:
-            logs.append(f"type: {transaction['type']}, amount: {transaction['amount']}, time: {transaction['timestamp']}")
+            logs.append(f"type: {transaction[2]}, amount: {transaction[3]}, time: {transaction[4]}")
         return logs
     
     def deposit(self, amount):
         try:
-            self.user_balance["balance"] += int(amount)
-            self.save_transaction("deposit", amount)
+            self.user_balance += int(amount)
+
             print(f"${amount} added succesfully")
-            print(f"current balance is ${self.user_balance['balance']}")
-            self.save_balance()
+            print(f"current balance is ${self.user_balance}")
+
+            # Update the balance on the data base 
+            db.update_balance(self.user_id, self.user_balance)
+            
+            # Update the transactions on the data base
+            db.save_transaction(self.user_id, "deposit", amount)
         except ValueError:
             print("Invalid amount. please enter a number")
     
     def withdraw(self, amount):
-        if self.user_balance["balance"] < amount:
+        if self.user_balance < amount:
             print("Withdraw has not been made insufficient funds")
             return
         try:
             self.user_balance["balance"] -= int(amount)
-            self.save_transaction("withdraw", amount)
+
             print(f"${amount} withdrawn succesfully")
-            print(f"current balance is ${self.user_balance['balance']}")
-            self.save_balance()
+            print(f"current balance is ${self.user_balance}")
+
+            # Update the balance on the data base 
+            db.update_balance(self.user_id, self.user_balance)
+            
+            # Update the transactions on the data base
+            db.save_transaction(self.user_id, "deposit", amount)
+
         except ValueError:
             print("Invalid amount. please enter a number")
 
     def money_transfer(self, to, amount):
-        if self.user_balance["balance"] < amount:
+        if self.user_balance < amount:
             print("Transfer has not been made insufficient funds")
             return
 
@@ -77,16 +84,6 @@ class Account:
         with open(balance_json, "w") as file:
             json.dump(balances, file, indent=4)
 
-    def password_check(self, input_password):
-        if self.user_account == None:
-            return False
-        return self.user_account["password"] == hash_password(input_password)
-    
-    def name_check(self, input_name):
-        if self.user_account == None:
-            return False
-        return self.user_account["name"] == input_name
-
     def change_password(self, newpassword):
         self.user_account["password"] = hash_password(newpassword)
         accounts = loading_accounts()
@@ -97,29 +94,6 @@ class Account:
                 break
         with open(user_accounts, "w") as file:
             json.dump(accounts, file, indent=4)
-
-    def save_balance(self):
-        balances = loading_balance()
-        for balance in balances:
-            if balance["name"] == self.name:
-                balance["balance"] = self.user_balance["balance"]
-                break
-        
-        with open(balance_json, "w") as file:
-            json.dump(balances, file, indent=4)
-
-    def save_transaction(self, type, amount):
-        transactions = loading_transactions()
-        new_transaction = {
-            "type": type,
-            "amount": amount, 
-            "timestamp": datetime.now().isoformat()
-        }
-
-        transactions.setdefault(self.name, []).append(new_transaction)
-
-        with open(user_transactions, "w") as file:
-            json.dump(transactions, file, indent=4)
     
     def recipient_transaction(self, to, amount):
         recipient_transactions = loading_transactions()
@@ -152,39 +126,6 @@ class Account:
         return transactions.get(self.name, [])
 
 
-def loading_accounts():
-    try:
-        with open(user_accounts) as file:
-            accounts = json.load(file)
-        return accounts
-    except FileNotFoundError:
-        return []
-
-
-def loading_balance():
-    try:
-        with open(balance_json) as file:
-            balances = json.load(file)
-        return balances
-    except FileNotFoundError:
-        return []
-
-
-def loading_transactions():
-    try:
-        with open(user_transactions) as file:
-            accounts = json.load(file)
-        return accounts
-    except FileNotFoundError:
-        return []
-
-
-def get_next_account_id(accounts):
-    if not accounts:
-        return 1
-    return max(account["id"] for account in accounts) + 1
-
-
 def hash_password(password):
     h = hashlib.sha256()
     h.update(password.encode())
@@ -193,24 +134,8 @@ def hash_password(password):
 
 
 def opening_account(name, password):
-    accounts = loading_accounts()
-    balances = loading_balance()
-    new_account =   {
-        "name": name,
-        "password": hash_password(password),
-        "id": get_next_account_id(accounts)
-    }
-    new_balance = {
-        "name": name,
-        "balance": 0
-    }
-    accounts.append(new_account)
-    balances.append(new_balance)
-    with open(user_accounts, "w") as file:
-        json.dump(accounts, file, indent=4)
-     
-    with open(balance_json, "w") as file:
-        json.dump(balances, file, indent=4)
+    hashed_pw = hash_password(password)
+    db.create_account(name, hashed_pw)
 
 
 def main():
@@ -219,15 +144,17 @@ def main():
     password = getpass.getpass("password: ")
     
     if question == "1":
-        user = Account(name, password)
-        checked =  user.password_check(password)
+        user_data = db.check_user(name, hash_password(password))
+        if user_data:
+            user = Account(user_data[0])
+            checked = True
+        else:
+            checked = False
     elif question == "2":
         opening_account(name, password)
         user = Account(name, password)
         print(f"Welcome to the **** bank {name}")
-        print("Please login to your account with the password you have created") 
-        password = getpass.getpass("password: ")
-        checked = user.password_check(password)
+        checked = True
     
     if checked:
         print(f"you have succesfully loged in {name}")
