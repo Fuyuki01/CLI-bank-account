@@ -108,7 +108,8 @@ quit
 
 ## Project Files
 
-- `bankapp.py` — main application file  
-- `bank.db` — stores usernames, passwords and account balances
+- `bankapp.py` — main application file
+- `db.py` - handles all database queries and interactions
+- `bank.db` — SQLite database storing account information and transaction history
   
 ---
