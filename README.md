@@ -8,8 +8,8 @@ A simple command-line banking system written in Python, built as a project to pr
 
 - Create new bank accounts
 - Log in to existing accounts
-- Deposit and withdraw money
-- Check current balance
+- Deposit and withdraw money, and transfer money
+- Check current balance and transaction history
 - Data saved to JSON files (`accounts.json`, `balance.json`)
 - Command-line interface using `argparse`
 
@@ -32,10 +32,10 @@ python bankapp.py
 ### Logging In
 When prompted:
 ```
-Do you have an account? (1 = yes, 2 = open one): 
+Do you have an account? (1 for yes, 2 to open one, 0 to exit): 
 ```
 
-Choose `1` to log in or `2` to register a new account.
+Choose `1` to log in or `2` to register a new account or press 0 to exit.
 
 ---
 
@@ -48,6 +48,15 @@ balance
 **Output:**
 ```
 Your current balance is $100
+```
+
+#### View Transactions
+```
+transactions
+```
+**Output:**
+```
+type: <type>, amount: <amount>, time: <timestamp>
 ```
 
 #### Deposit Money
@@ -70,6 +79,24 @@ $20 withdrawn successfully
 Current balance is $130
 ```
 
+#### Transfer Money
+```
+transfer --to <user>  --amount 20
+```
+**Output:**
+```
+$<amount> has been transferred successfully to <user> 
+```
+
+#### Change Password
+```
+change-password --new <newpassword>
+```
+**Output:**
+```
+password has been changed successfully 
+```
+
 #### Logout / Exit
 ```
 clear
@@ -83,6 +110,7 @@ quit
 
 - `bankapp.py` — main application file  
 - `accounts.json` — stores usernames and passwords  
-- `balance.json` — stores account balances  
-
+- `balance.json` — stores account balances
+- `transactions.json` - stores transaction history
+- 
 ---
