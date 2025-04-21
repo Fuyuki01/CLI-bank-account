@@ -12,7 +12,7 @@ A simple command-line banking system written in Python using Sqlite, built as a 
 - View transaction history
 - All data is saved persistently in a SQLite database (`bank.db`)
 - CLI interface using `argparse`
-- 
+  
 ---
 ### Clone the repository
 ```bash
