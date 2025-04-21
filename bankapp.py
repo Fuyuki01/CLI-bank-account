@@ -116,7 +116,15 @@ def opening_account(name, password):
 
 
 def main():
-    question = input("do you have a account if you have type 1 for oppening acount 2 ")
+    while True:
+        question = input("do you have a account if you have type 1 for oppening acount 2 to leave select 0: ")
+        if question in ["1", "2"]:
+            break
+        elif question == "0":
+            return
+        else:
+            print("you have to select an option or to leave 0")
+
     name = input("name: ").strip().lower()
     password = getpass.getpass("password: ")
     
